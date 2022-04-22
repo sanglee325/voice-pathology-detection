@@ -15,9 +15,11 @@ import argparse
 from tqdm import tqdm
 import numpy as np
 import pdb
+from sklearn.datasets import make_classification
+from imblearn.over_sampling import SMOTE 
 
 from models.cnn import BinaryResNet18
-from data_loader import VPDDataset
+from data_loader import VPDDataset, get_smote
 from utils import set_reproducibility, set_logpath, save_checkpoint
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -32,7 +34,7 @@ def parse_args():
     parser = argparse.ArgumentParser(description='PyTorch Training')
     parser.add_argument('--lr', default=1e-3, type=float, help='learning rate')
     parser.add_argument('--batch-size', default=32, type=int, help='batch size')
-    parser.add_argument('--epochs', default=100, type=int,
+    parser.add_argument('--epochs', default=50, type=int,
                         help='total epochs to run')
     parser.add_argument('--seed', default=None, type=int, help='random seed')
     parser.add_argument('--decay', default=1e-4, type=float, help='weight decay')
@@ -41,6 +43,8 @@ def parse_args():
     parser.add_argument('--name', default='0', type=str, help='name of run')
     parser.add_argument('--log_path', default="./logs/", type=str,
                         help='path for results')
+
+    parser.add_argument('--smote', '-s', action='store_true', help='oversampling')
 
     return parser.parse_args()
 
@@ -135,7 +139,12 @@ if __name__ == '__main__':
     train_dataset = VPDDataset(DATA_DIR, desc="train", time_size=time_size)
     val_dataset = VPDDataset(DATA_DIR, desc="val", time_size=time_size)
 
-    train_loader = DataLoader(train_dataset, batch_size=args.batch_size, shuffle=True, drop_last=False)
+    if args.smote:
+        smote_model = SMOTE(random_state=args.seed, k_neighbors=5)
+        smote_dataset = get_smote(train_dataset, smote_model)
+        train_loader = DataLoader(smote_dataset, batch_size=args.batch_size, shuffle=True, drop_last=False)
+    else:
+        train_loader = DataLoader(train_dataset, batch_size=args.batch_size, shuffle=True, drop_last=False)
     val_loader = DataLoader(val_dataset, batch_size=args.batch_size, shuffle=False, drop_last=False)
 
     num_trainable_parameters = 0
