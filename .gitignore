@@ -1,0 +1,9 @@
+*.pth
+.pylint.d/
+presentation
+*.pdf
+*.pptx
+*.potx
+*.docx
+*.csv
+features
