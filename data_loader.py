@@ -23,11 +23,12 @@ class VPDDataset(Dataset):
             elif data.shape[1] < self.time_size:
                 tmp = np.zeros((data.shape[0], self.time_size - data.shape[1], data.shape[2]))            
                 data = np.concatenate((data, tmp), axis=1)
-
+        
             self.data.append(data)
             self.labels.append(label)
-
-        self.data, self.labels = np.array(self.data), np.array(self.labels)
+            
+        self.data = np.array(self.data)
+        self.labels = np.array(self.labels)
 
     def __len__(self):
         return len(self.file_path_name)
@@ -39,6 +40,7 @@ class VPDDataset(Dataset):
 
 
 def get_smote(train_dataset, smote_model):
+    (_, prev_shape_1, prev_shape_2) = train_dataset.data[0].shape
     inputs, labels = np.array(train_dataset.data), np.array(train_dataset.labels)
 
     flatten_inputs = []
@@ -50,7 +52,7 @@ def get_smote(train_dataset, smote_model):
     
     reshaped_inputs = []
     for idx in range(inputs_res.shape[0]):
-        reshaped_inputs.append(inputs_res[idx, :].reshape(1, 118, 768))
+        reshaped_inputs.append(inputs_res[idx, :].reshape(1, prev_shape_1, prev_shape_2))
     reshaped_inputs = np.array(reshaped_inputs)
     labels_res = labels_res.reshape(-1, 1)
 

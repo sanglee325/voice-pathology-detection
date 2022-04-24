@@ -43,6 +43,8 @@ def parse_args():
     parser.add_argument('--name', default='0', type=str, help='name of run')
     parser.add_argument('--log_path', default="./logs/", type=str,
                         help='path for results')
+    parser.add_argument('--data_path', default="./features/", type=str,
+                        help='path for results')
 
     parser.add_argument('--smote', '-s', action='store_true', help='oversampling')
 
@@ -135,7 +137,7 @@ if __name__ == '__main__':
     model = BinaryResNet18(pretrained=True)
     model.to(device)
 
-    DATA_DIR = "./features"
+    DATA_DIR = args.data_path
     train_dataset = VPDDataset(DATA_DIR, desc="train", time_size=time_size)
     val_dataset = VPDDataset(DATA_DIR, desc="val", time_size=time_size)
 
