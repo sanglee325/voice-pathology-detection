@@ -22,8 +22,9 @@ from models.cnn import CNNNetwork
 from models.resnet import BinaryResNet18
 from models.lstm import LSTMNetwork
 from data_loader import get_smote
-from feature_dataset import WAVLMDataset, W2VDataset, STFTDataset
+from feature_dataset import WAVLMDataset, WVLMLDataset, W2VDataset, STFTDataset
 from utils import set_reproducibility, set_logpath, save_checkpoint
+from utils import Logger
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 cudnn.benchmark = True
@@ -53,10 +54,11 @@ def parse_args():
     parser.add_argument('--smote', '-s', action='store_true', help='oversampling')
     parser.add_argument('--extractor', default="WAVLM", type=str,
                         help='Feature extractor type')
+    parser.add_argument('--pretrained', '-p', action='store_true', help='pretrained resnet')
 
     return parser.parse_args()
 
-def train(args, epoch, model, train_loader, optimizer, criterion, scaler, scheduler):
+def train(args, epoch, model, train_loader, optimizer, criterion, scaler, scheduler, logger=None):
     model.train()
     batch_bar = tqdm(total=len(train_loader), dynamic_ncols=True, leave=False, position=0, desc='Train') 
 
@@ -99,10 +101,14 @@ def train(args, epoch, model, train_loader, optimizer, criterion, scaler, schedu
         train_loss = float(total_loss / total)
         lr_rate = float(optimizer.param_groups[0]['lr'])
 
-    print("Epoch {}/{}: Train Acc {:.04f}%, Train Loss {:.04f}, Learning Rate {:.04f}".format(
-                                        epoch + 1, args.epochs, train_acc, train_loss, lr_rate))
+    msg = "Epoch {}/{}: Train Acc {:.04f}%, Train Loss {:.04f}, Learning Rate {:.04f}".format(
+                                        epoch + 1, args.epochs, train_acc, train_loss, lr_rate)
+    if logger:
+        logger.log(msg)
+    else:
+        print(msg)
     
-def validate(args, model, val_loader):
+def validate(args, model, val_loader, logger=None):
     model.eval()
     batch_bar = tqdm(total=len(val_loader), dynamic_ncols=True, position=0, leave=False, desc='Validation')
 
@@ -127,7 +133,12 @@ def validate(args, model, val_loader):
     batch_bar.close()
 
     val_acc = 100 * num_correct / total
-    print("Validation: {:.04f}%".format(val_acc))
+
+    msg = "Validation: {:.04f}%".format(val_acc)
+    if logger:
+        logger.log(msg)
+    else:
+        print(msg)
 
     return val_acc
 
@@ -139,9 +150,11 @@ if __name__ == '__main__':
     
     logpath = args.log_path
     logfile_base = f"{args.name}_{args.arch}_S{args.seed}_B{args.batch_size}_LR{args.lr}_E{args.epochs}"
-    logdir = logpath + logfile_base
 
-    set_logpath(logpath, logfile_base)
+    logname = logfile_base
+    logger = Logger(logname, logpath)
+    logdir = logger.logdir
+
     print('save path: ', logdir)
 
     DATA_DIR = args.data_path
@@ -150,6 +163,10 @@ if __name__ == '__main__':
         time_size = 118
         train_dataset = WAVLMDataset(DATA_DIR, desc="train", time_size=time_size)
         val_dataset = WAVLMDataset(DATA_DIR, desc="val", time_size=time_size)
+    elif args.extractor == "WVLML":
+        time_size = 118
+        train_dataset = WVLMLDataset(DATA_DIR, desc="train", time_size=time_size)
+        val_dataset = WVLMLDataset(DATA_DIR, desc="val", time_size=time_size)
     elif args.extractor == "STFT":
         time_size = 596
         train_dataset = STFTDataset(DATA_DIR, desc="train", time_size=time_size)
@@ -168,7 +185,7 @@ if __name__ == '__main__':
     val_loader = DataLoader(val_dataset, batch_size=args.batch_size, shuffle=False, drop_last=False)
 
     if args.arch == 'resnet18':
-        model = BinaryResNet18(pretrained=True)
+        model = BinaryResNet18(pretrained=args.pretrained)
     elif args.arch == 'cnn':
         model = CNNNetwork()
     elif args.arch == 'lstm':
@@ -179,7 +196,7 @@ if __name__ == '__main__':
     num_trainable_parameters = 0
     for p in model.parameters():
         num_trainable_parameters += p.numel()
-    print("Number of Params: {}".format(num_trainable_parameters))
+    logger.log("Number of Params: {}".format(num_trainable_parameters))
 
     criterion = torch.nn.BCEWithLogitsLoss()
     optimizer = optim.SGD(model.parameters(), lr=args.lr, momentum=0.9, weight_decay=args.decay)
@@ -191,10 +208,12 @@ if __name__ == '__main__':
     best_model = model
 
     for epoch in range(args.epochs):
-        train(args, epoch, model, train_loader, optimizer, criterion, scaler, scheduler)
-        val_acc = validate(args, model, val_loader)
+        train(args, epoch, model, train_loader, optimizer, criterion, scaler, scheduler, logger)
+        val_acc = validate(args, model, val_loader, logger)
         
         if BEST_VAL <= val_acc:
             save_checkpoint(args, val_acc, model, optimizer, epoch, logdir)
             best_model = model
             BEST_VAL = val_acc
+    
+    logger.log("Best Acc: {}".format(BEST_VAL))

@@ -1,4 +1,7 @@
 import os
+import sys
+import time
+from datetime import datetime
 import shutil
 import random
 
@@ -62,3 +65,41 @@ def save_checkpoint(args, acc, model, optim, epoch, logdir, index=False):
 
     ckpt_path = os.path.join(logdir, ckpt_name)
     torch.save(state, ckpt_path)
+
+class Logger(object):
+    """Reference: https://gist.github.com/gyglim/1f8dfb1b5c82627ae3efcfbbadb9f514"""
+    def __init__(self, fn, dirpath):
+        if not os.path.exists(dirpath):
+            os.mkdir(dirpath)
+
+        logdir = dirpath + fn
+        if not os.path.exists(logdir):
+            os.mkdir(logdir)
+        if len(os.listdir(logdir)) != 0:
+            ans = input("log_dir is not empty. All data inside log_dir will be deleted. "
+                            "Will you proceed [y/N]? ")
+            if ans in ['y', 'Y']:
+                shutil.rmtree(logdir)
+            else:
+                exit(1)
+        self.set_dir(logdir)
+
+    def set_dir(self, logdir, log_fn='log.txt'):
+        self.logdir = logdir
+        if not os.path.exists(logdir):
+            os.mkdir(logdir)
+        self.log_file = open(os.path.join(logdir, log_fn), 'a')
+
+    def log(self, string):
+        self.log_file.write('[%s] %s' % (datetime.now(), string) + '\n')
+        self.log_file.flush()
+
+        print('[%s] %s' % (datetime.now(), string))
+        sys.stdout.flush()
+
+    def log_dirname(self, string):
+        self.log_file.write('%s (%s)' % (string, self.logdir) + '\n')
+        self.log_file.flush()
+
+        print('%s (%s)' % (string, self.logdir))
+        sys.stdout.flush()
