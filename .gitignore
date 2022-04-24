@@ -1,6 +1,6 @@
-features.zip
-features/
-
+*.zip
+*.tar
+data/
 logs
 
 # Byte-compiled / optimized / DLL files
