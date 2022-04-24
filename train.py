@@ -19,7 +19,8 @@ from sklearn.datasets import make_classification
 from imblearn.over_sampling import SMOTE 
 
 from models.cnn import BinaryResNet18
-from data_loader import VPDDataset, get_smote
+from data_loader import get_smote
+from feature_dataset import WAVLMDataset, W2VDataset, STFTDataset
 from utils import set_reproducibility, set_logpath, save_checkpoint
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -43,10 +44,12 @@ def parse_args():
     parser.add_argument('--name', default='0', type=str, help='name of run')
     parser.add_argument('--log_path', default="./logs/", type=str,
                         help='path for results')
-    parser.add_argument('--data_path', default="./features/", type=str,
+    parser.add_argument('--data_path', default="./data/", type=str,
                         help='path for results')
 
     parser.add_argument('--smote', '-s', action='store_true', help='oversampling')
+    parser.add_argument('--extractor', default="WAVLM", type=str,
+                        help='Feature extractor type')
 
     return parser.parse_args()
 
@@ -132,14 +135,23 @@ if __name__ == '__main__':
     set_logpath(logpath, logfile_base)
     print('save path: ', logdir)
 
-    time_size = 118
-
     model = BinaryResNet18(pretrained=True)
     model.to(device)
 
     DATA_DIR = args.data_path
-    train_dataset = VPDDataset(DATA_DIR, desc="train", time_size=time_size)
-    val_dataset = VPDDataset(DATA_DIR, desc="val", time_size=time_size)
+
+    if args.extractor == "WAVLM":
+        time_size = 118
+        train_dataset = WAVLMDataset(DATA_DIR, desc="train", time_size=time_size)
+        val_dataset = WAVLMDataset(DATA_DIR, desc="val", time_size=time_size)
+    elif args.extractor == "STFT":
+        time_size = 596
+        train_dataset = STFTDataset(DATA_DIR, desc="train", time_size=time_size)
+        val_dataset = STFTDataset(DATA_DIR, desc="val", time_size=time_size)
+    elif args.extractor == "W2VL":
+        time_size = 236
+        train_dataset = W2VDataset(DATA_DIR, desc="train", time_size=time_size)
+        val_dataset = W2VDataset(DATA_DIR, desc="val", time_size=time_size)
 
     if args.smote:
         smote_model = SMOTE(random_state=args.seed, k_neighbors=5)
