@@ -19,6 +19,7 @@ from sklearn.datasets import make_classification
 from imblearn.over_sampling import SMOTE 
 
 from models.cnn import BinaryResNet18
+from models.lstm import LSTMNetwork
 from data_loader import get_smote
 from feature_dataset import WAVLMDataset, W2VDataset, STFTDataset
 from utils import set_reproducibility, set_logpath, save_checkpoint
@@ -39,6 +40,7 @@ def parse_args():
                         help='total epochs to run')
     parser.add_argument('--seed', default=None, type=int, help='random seed')
     parser.add_argument('--decay', default=1e-4, type=float, help='weight decay')
+    parser.add_argument('--arch', default='resnet18', type=str, help='Model Architecture')
     
     # save path
     parser.add_argument('--name', default='0', type=str, help='name of run')
@@ -65,6 +67,9 @@ def train(args, epoch, model, train_loader, optimizer, criterion, scaler, schedu
         
         optimizer.zero_grad()
         x, y = x.to(device), y.to(device)
+
+        if args.arch == 'lstm':
+            x = x.squeeze()
 
         with torch.cuda.amp.autocast():     
             outputs = model(x.float())
@@ -106,6 +111,9 @@ def validate(args, model, val_loader):
 
         x, y = x.to(device, dtype=torch.float), y.to(device, dtype=torch.float)
 
+        if args.arch == 'lstm':
+            x = x.squeeze()
+
         with torch.no_grad():
             outputs = model(x)
 
@@ -129,14 +137,11 @@ if __name__ == '__main__':
 
     
     logpath = args.log_path
-    logfile_base = f"{args.name}_S{args.seed}_B{args.batch_size}_LR{args.lr}_E{args.epochs}"
+    logfile_base = f"{args.name}_{args.arch}_S{args.seed}_B{args.batch_size}_LR{args.lr}_E{args.epochs}"
     logdir = logpath + logfile_base
 
     set_logpath(logpath, logfile_base)
     print('save path: ', logdir)
-
-    model = BinaryResNet18(pretrained=True)
-    model.to(device)
 
     DATA_DIR = args.data_path
 
@@ -160,6 +165,13 @@ if __name__ == '__main__':
     else:
         train_loader = DataLoader(train_dataset, batch_size=args.batch_size, shuffle=True, drop_last=False)
     val_loader = DataLoader(val_dataset, batch_size=args.batch_size, shuffle=False, drop_last=False)
+
+    if args.arch == 'resnet18':
+        model = BinaryResNet18(pretrained=True)
+    elif args.arch == 'lstm':
+        _, _, _, input_size = train_dataset.data.shape
+        model = LSTMNetwork(input_size=input_size, time_size=time_size)
+    model.to(device)
 
     num_trainable_parameters = 0
     for p in model.parameters():
