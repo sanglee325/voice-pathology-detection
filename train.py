@@ -18,7 +18,8 @@ import pdb
 from sklearn.datasets import make_classification
 from imblearn.over_sampling import SMOTE 
 
-from models.cnn import BinaryResNet18
+from models.cnn import CNNNetwork
+from models.resnet import BinaryResNet18
 from models.lstm import LSTMNetwork
 from data_loader import get_smote
 from feature_dataset import WAVLMDataset, W2VDataset, STFTDataset
@@ -168,6 +169,8 @@ if __name__ == '__main__':
 
     if args.arch == 'resnet18':
         model = BinaryResNet18(pretrained=True)
+    elif args.arch == 'cnn':
+        model = CNNNetwork()
     elif args.arch == 'lstm':
         _, _, _, input_size = train_dataset.data.shape
         model = LSTMNetwork(input_size=input_size, time_size=time_size)
