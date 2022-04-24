@@ -1,5 +1,9 @@
-python train.py --smote --data_path ./feat-WAVLM/ --name WAVLM-SMOTE
-python train.py --smote --data_path ./feat-STFT/ --name STFT-SMOTE
+# baseline train
+python train.py --name WAVLM --extractor WAVLM
+python train.py --name STFT --extractor STFT
+python train.py --name W2VL --extractor W2VL
 
-python train.py --data_path ./feat-WAVLM/ --name WAVLM
-python train.py --data_path ./feat-STFT/ --name STFT
+# smote train
+python train.py --smote --name WAVLM-SMOTE --extractor WAVLM
+python train.py --smote --name STFT-SMOTE --extractor STFT
+python train.py --smote --name W2VL-SMOTE --extractor W2VL
