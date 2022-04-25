@@ -59,7 +59,7 @@ def save_checkpoint(args, acc, model, optim, epoch, logdir, index=False):
     }
 
     if index:
-        ckpt_name = 'ckpt_epoch' + str(epoch) + '_' + str(args.seed) + '.pth'
+        ckpt_name = 'ckpt_' + str(args.seed) + '_' + str(index) + '.pth'
     else:
         ckpt_name = 'ckpt_' + str(args.seed) + '.pth'
 
