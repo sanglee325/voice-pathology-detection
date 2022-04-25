@@ -22,7 +22,7 @@ from models.cnn import CNNNetwork
 from models.resnet import BinaryResNet18
 from models.lstm import LSTMNetwork
 from data_loader import get_smote
-from feature_dataset import WAVLMDataset, WVLMLDataset, W2VDataset, STFTDataset
+from feature_dataset import WAVLMDataset, WVLMLDataset, W2VDataset, STFTDataset, MFCC13Dataset, MFCC40Dataset
 from utils import set_reproducibility, set_logpath, save_checkpoint
 from utils import Logger
 
@@ -175,6 +175,14 @@ if __name__ == '__main__':
         time_size = 236
         train_dataset = W2VDataset(DATA_DIR, desc="train", time_size=time_size)
         val_dataset = W2VDataset(DATA_DIR, desc="val", time_size=time_size)
+    elif args.extractor == "mfcc13":
+        time_size = 475
+        train_dataset = MFCC13Dataset(DATA_DIR, desc="train", time_size=time_size)
+        val_dataset = MFCC13Dataset(DATA_DIR, desc="val", time_size=time_size)
+    elif args.extractor == "mfcc40":
+        time_size = 475
+        train_dataset = MFCC40Dataset(DATA_DIR, desc="train", time_size=time_size)
+        val_dataset = MFCC40Dataset(DATA_DIR, desc="val", time_size=time_size)
 
     if args.smote:
         smote_model = SMOTE(random_state=args.seed, k_neighbors=5)
