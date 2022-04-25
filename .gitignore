@@ -2,6 +2,7 @@
 *.tar
 data/
 log*
+test.sh
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
