@@ -9,24 +9,24 @@ class CNNNetwork(nn.Module):
         super().__init__()
         
         self.backbone = nn.Sequential(
-            nn.Conv2d(1, 16, kernel_size=7, stride=2, padding = (3, 3)),
+            nn.Conv2d(1, 16, kernel_size=3, stride=2, padding = (3, 3)),
             nn.BatchNorm2d(16),
             nn.GELU(),
             nn.Dropout(p = 0.2),
             
             #layernorm & GeLu
-            nn.Conv2d(16, 64, kernel_size=5, stride=2, padding = 1),
+            nn.Conv2d(16, 64, kernel_size=3, stride=2, padding = 1),
             nn.BatchNorm2d(64),
             nn.GELU(),
             nn.Dropout(p = 0.2),
             nn.MaxPool2d(kernel_size=3, stride=2), #maxpool location switching
             
-            nn.Conv2d(64, 128, kernel_size=5, stride=2, padding = 1),
+            nn.Conv2d(64, 128, kernel_size=3, stride=2, padding = 1),
             nn.BatchNorm2d(128),
             nn.GELU(),
             nn.Dropout(p = 0.2),
             
-            nn.Conv2d(128, 256, kernel_size=5, stride=2, padding = 1),
+            nn.Conv2d(128, 256, kernel_size=3, stride=2, padding = 1),
             nn.BatchNorm2d(256),
             nn.GELU(),
             nn.AdaptiveMaxPool2d(1),
